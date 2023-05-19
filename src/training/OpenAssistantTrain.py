@@ -13,7 +13,7 @@ def main():
 
     OAval = OpenAssistantDataset('val', DATA_ROOT + 'validation.npy')
 
-    MODEL_PATH = '../models'
+    MODEL_PATH = '../../models'
     model = torch.load(MODEL_PATH + "/BaseHopfieldNetwork.pth")
     this_model_path = MODEL_PATH + '/OAHopfieldNetwork.pth'
     RetrainNetwork.main([OAtrain, OAval], model, this_model_path)

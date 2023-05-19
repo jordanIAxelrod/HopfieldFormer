@@ -8,10 +8,9 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from transformers import AutoTokenizer, GPT2LMHeadModel
-import src.HopfieldFormer as hf
+import src.training.HopfieldFormer as hf
 import VNetwork
 import numpy as np
-import asyncio
 
 
 class RLTrainingBuffer:
@@ -254,7 +253,7 @@ class Hyp:
 
 
 if __name__ == '__main__':
-    pipe = ModelPipeline('../models/BaseHopfieldNetwork.pth')
+    pipe = ModelPipeline('../../models/BaseHopfieldNetwork.pth')
     msg1 = 'What prompt would make you the best chat bot? Please make it succinct'
     # x = pipe.beam_response(msg, beam_size=1)
     # print(msg + ''.join(x.trace()))

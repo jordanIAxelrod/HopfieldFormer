@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from collections.abc import Iterable
 import numpy as np
 import pandas as pd
-import utils
+from src.App import utils
 from datasets import load_dataset
 
 

@@ -21,7 +21,7 @@ def main(dataset, model, model_path):
     N_EPOCHS = 4
     try:
         print(os.getcwd())
-        print(os.listdir('..'))
+        print(os.listdir('../..'))
 
         tokenizer = AutoTokenizer.from_pretrained('gpt2')
         tokenizer.pad_token = tokenizer.eos_token
@@ -88,6 +88,6 @@ if __name__ == '__main__':
     generator = torch.Generator().manual_seed(1902821)
     openweb_train, openweb_test, openweb_val, _ = torch.utils.data.random_split(openweb, [.1, .02, .02, 1 - .1 - .04],
                                                                                 generator=generator)
-    MODEL_PATH = '../models/BaseHopfieldNetwork.pth'
+    MODEL_PATH = '../../models/BaseHopfieldNetwork.pth'
     main([openweb_train, openweb_test], model, MODEL_PATH)
 
