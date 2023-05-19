@@ -13,7 +13,7 @@ class App(tk.Tk):
         self.title('HopChat')
         print(1)
         # Create the model
-        model = ModelPipeline('../models/BaseHopfieldNetwork.pth', accum_grad=True, batch_size=5)
+        model = ModelPipeline('../models/OAHopfieldNetwork.pth', accum_grad=True, batch_size=5)
         print(2)
         # Create the view and place it on the root window
         view = ChatBotView('Jordan Axelrod', async_loop)

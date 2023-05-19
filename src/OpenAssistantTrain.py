@@ -15,9 +15,9 @@ def main():
 
     MODEL_PATH = '../models'
     model = torch.load(MODEL_PATH + "/BaseHopfieldNetwork.pth")
-
-    RetrainNetwork.main([OAtrain, OAval], model)
-    torch.save(model.state_dict(), MODEL_PATH + '/OAHopfieldNetwork.pth')
+    this_model_path = MODEL_PATH + '/OAHopfieldNetwork.pth'
+    RetrainNetwork.main([OAtrain, OAval], model, this_model_path)
+    torch.save(model.state_dict(), this_model_path)
 
 if __name__ == '__main__':
     main()

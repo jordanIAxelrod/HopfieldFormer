@@ -7,8 +7,8 @@ from __future__ import annotations
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from transformers import AutoTokenizer
-import src.HopfieldFormer as HopfieldFormer
+from transformers import AutoTokenizer, GPT2LMHeadModel
+import src.HopfieldFormer as hf
 import VNetwork
 import numpy as np
 import asyncio
@@ -36,7 +36,10 @@ class ModelPipeline:
 
     def __init__(self, model_path, accum_grad=False, batch_size=None, gamma: float = .1):
 
-        self.model = torch.load(model_path)
+        model_state_dict = torch.load(model_path)
+        gpt = GPT2LMHeadModel.from_pretrained('gpt2')
+        self.model = hf.HopfieldFormer(gpt, 4)
+        self.model.load_state_dict(model_state_dict)
 
         self.accum_grad = accum_grad
         self.batch_size = batch_size
@@ -62,7 +65,10 @@ class ModelPipeline:
 
     async def generate_response(self, msg: str, username: str):
         # Generate the response
-        prompt = f"Good morning. You are a friendly chat bot. Your perogative is to answer the humans questions after the '<ChatBot>:' start\n The following is an example.\n\n <{username}> Hi chat bot, can you tell me who the lead singer of queen is?\n\n\n<ChatBot> Hi {username}, the lead signer of queen is Freddie Mercury!"
+        prompt = f"Good morning. You are a friendly chat bot. Your perogative is to answer the humans questions after" \
+                 f" the '<ChatBot>:' start\n The following is an example.\n\n <{username}> Hi chat bot, can you " \
+                 f"tell me who the lead singer of queen is?\n\n\n<ChatBot> Hi {username}, the lead signer of " \
+                 f"queen is Freddie Mercury!"
         response = await self.probability_decode(msg, username, temperature=.8)
         print('response Generated')
         return response
