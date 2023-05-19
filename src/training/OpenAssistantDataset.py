@@ -61,7 +61,6 @@ class OpenAssistantDataset(Dataset):
         return {'text': self.all_conversations[index]}
 
 
-
 def flatten(xs):
     for x in xs:
         if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):

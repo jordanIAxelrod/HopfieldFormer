@@ -33,12 +33,16 @@ class RLTrainingBuffer:
 
 class ModelPipeline:
 
-    def __init__(self, model_path, accum_grad=False, batch_size=None, gamma: float = .1):
-
-        model_state_dict = torch.load(model_path)
-        gpt = GPT2LMHeadModel.from_pretrained('gpt2')
-        self.model = hf.HopfieldFormer(gpt, 4)
-        self.model.load_state_dict(model_state_dict)
+    def __init__(self, model_path, user_model, accum_grad=False, batch_size=None, gamma: float = .1):
+        """
+        Initializes the model of the Chatbot app following a MVC structure
+        :param model_path: path to default model
+        :param user_model: path to user specific model
+        :param accum_grad: whether we update everytime
+        :param batch_size: if we accumulate for how much
+        :param gamma: future discount
+        """
+        self.model = self.load_model(user_model, model_path)
 
         self.accum_grad = accum_grad
         self.batch_size = batch_size
@@ -62,7 +66,29 @@ class ModelPipeline:
         self.V.to(self.device)
         self.step = 0
 
+    def load_model(self, url_user, url_standard):
+        """
+        Loads the model
+        :param url_user: user specific model
+        :param url_standard: standard model
+        :return: the loaded Hopfield Model
+        """
+        try:
+            model_state_dict = torch.load(url_user)
+        except FileNotFoundError:
+            model_state_dict = torch.load(url_standard)
+        gpt = GPT2LMHeadModel.from_pretrained('gpt2')
+        model = hf.HopfieldFormer(gpt, 4)
+        model.load_state_dict(model_state_dict)
+        return model
+
     async def generate_response(self, msg: str, username: str):
+        """
+        Generates a response given the input has a prompt that is put in front of the chat history
+        :param msg: the chat history
+        :param username: the username of the user
+        :return: the response as a string
+        """
         # Generate the response
         prompt = f"Good morning. You are a friendly chat bot. Your perogative is to answer the humans questions after" \
                  f" the '<ChatBot>:' start\n The following is an example.\n\n <{username}> Hi chat bot, can you " \
@@ -73,7 +99,13 @@ class ModelPipeline:
         return response
 
     async def train_network(self, msg: str, rlhf_input: float, response: str):
-
+        """
+        Runs the online reinforcement learning using A2C
+        :param msg: the chat history
+        :param rlhf_input: the reward for the previous response
+        :param response: the generated response from the chat history
+        :return: None
+        """
         # Set the network to train only the hopfield networks again
         self.model.train()
         self.model.freeze_gpt()
@@ -96,6 +128,12 @@ class ModelPipeline:
         self.step += 1
 
     async def front_truncate(self, msg, length=-1024):
+        """
+        Removes the front of the list of tokens to truncate to desired size
+        :param msg: the string to truncate
+        :param length: truncation length
+        :return:
+        """
         tokenize = self.tokenizer.tokenize(msg)
         tokens_over = len(tokenize) + length
         if tokens_over > 0:
@@ -104,6 +142,13 @@ class ModelPipeline:
         return self.tokenizer(string, return_tensors='pt').to(self.device), tokens_over
 
     async def a2c(self, response_tokenize, rlhf_input, inp) -> torch.Tensor:
+        """
+        The meat of the a2c algorithm. Helper method for train_network
+        :param response_tokenize: the response tokenized
+        :param rlhf_input: the reward for the previous response
+        :param inp: the chat history
+        :return: the actor critic average reward given the V network the response and the reward
+        """
         print(self.step)
         new_buffer = RLTrainingBuffer(response_tokenize)
         new_buffer.input = inp
@@ -127,12 +172,24 @@ class ModelPipeline:
         return a2c
 
     async def optim_step(self):
+        """
+        Steps all the optimizers and zeros them
+        :return: None
+        """
         self.optimizer.step()
         self.V_optimizer.step()
         self.V_optimizer.zero_grad()
         self.optimizer.zero_grad()
 
     async def probability_decode(self, msg: str, username: str, temperature: float = .5, length_pen: float = 1.):
+        """
+        Uses a greedy decode by sampling the stochastic distribution produced by the model
+        :param msg: chat history
+        :param username: user's name
+        :param temperature: how to scale the distribution
+        :param length_pen: penalty for length
+        :return: the greedy response as a string
+        """
         is_reached = False
         iteration = 0
         self.model.eval()
@@ -155,6 +212,12 @@ class ModelPipeline:
         return response
 
     def beam_response(self, msg, beam_size=3):
+        """
+        Uses a beam decode. Much slower
+        :param msg: chat history
+        :param beam_size: amount of beams to use
+        :return: the best response
+        """
         self.model.eval()
         msg = self.tokenizer(msg, return_tensors='pt').to(self.device)
         V = len(self.tokenizer.get_vocab())
